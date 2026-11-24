@@ -70,7 +70,7 @@ make install
 Want to add a browser or tweak swipe sensitivity?
 
 - **Add a browser**: Add its macOS bundle ID to `Sources/TabSwipeCore/BrowserRegistry.swift`.
-- **Adjust swipe sensitivity**: Change `horizontalThreshold` (default `0.075`) in `Sources/TabSwipeCore/SwipeRecognizer.swift`.
+- **Adjust swipe sensitivity**: Change `horizontalThreshold` (default `0.035`) in `Sources/TabSwipeCore/SwipeRecognizer.swift`.
 - Rebuild and reinstall:
 
 ```bash

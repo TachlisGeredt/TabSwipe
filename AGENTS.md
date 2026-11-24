@@ -47,12 +47,12 @@ No full Xcode installation is required — Apple Command Line Tools (`swiftc`) i
 3. Add a test case in `Tests/TabSwipeTests/BrowserRegistryTests.swift`.
 
 ### Adjusting Gesture Sensitivity or Direction
-- Edit `horizontalThreshold` (default `0.075` of normalized trackpad width) or `horizontalDominanceRatio` (default `1.5`) in `Sources/TabSwipeCore/SwipeRecognizer.swift`.
+- Edit `horizontalThreshold` (default `0.035` of normalized trackpad width) or `horizontalDominanceRatio` (default `1.35`) in `Sources/TabSwipeCore/SwipeRecognizer.swift`.
 - Keep `TabSwipeCore` free of `AppKit`/`CoreGraphics` imports so `SwipeRecognizer` stays fast and unit-testable.
 
 ## macOS Implementation Gotchas
 
 - **Memory safety in `CGEventTapCallBack`**: Always return `Unmanaged.passUnretained(event)` when passing an event through (returning `passRetained` leaks every event).
-- **Space-switch suppression**: macOS emits both raw touch frames (`!nsEvent.allTouches().isEmpty`) and synthesized Dock/Spaces fluid-gesture packets (`nsEvent.allTouches().isEmpty`) on `CGEventType(rawValue: 29)`. Both must return `nil` while suppressing an active `⌘` + 3-finger gesture.
+- **Space-switch suppression**: macOS emits raw touch frames on `CGEventType(rawValue: 29)` AND Dock fluid Space-sliding events on `CGEventType(rawValue: 30)` (plus synthesized empty-touch packets on `29`), often with `event.flags == 0`. Always read live modifier flags via `CGEventSource.flagsState(.hidSystemState)` and return `nil` on both `30` and `29` while suppressing a `⌘` + 3-finger gesture.
 - **Event tap timeout recovery**: Always handle `.tapDisabledByTimeout` and `.tapDisabledByUserInput` by re-enabling the tap only when `isEnabled == true`.
 - **Accessibility after rebuild**: `tabswipe install` ad-hoc signs `~/.local/bin/tabswipe`. On some macOS versions, replacing the binary may require toggling Accessibility off/on in System Settings.

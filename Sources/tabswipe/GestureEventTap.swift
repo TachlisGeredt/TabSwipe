@@ -9,8 +9,9 @@ import TabSwipeCore
 /// The tap is kept disabled whenever no supported browser is frontmost so there is zero overhead
 /// in all other applications.
 final class GestureEventTap {
-    private static let gestureEventTypeRawValue: UInt32 = 29 // NSEvent.EventType.gesture
-    private static let swipeEventTypeRawValue: UInt32 = 31   // NSEvent.EventType.swipe
+    private static let gestureEventTypeRawValue: UInt32 = 29     // NSEvent.EventType.gesture (touch frames)
+    private static let dockControlEventTypeRawValue: UInt32 = 30 // Dock fluid Spaces/Mission Control gesture
+    private static let swipeEventTypeRawValue: UInt32 = 31       // NSEvent.EventType.swipe
 
     private let recognizer: SwipeRecognizer
     private let onSwipe: (SwipeAction) -> Void
@@ -39,6 +40,7 @@ final class GestureEventTap {
 
         let mask: CGEventMask =
             (1 << Self.gestureEventTypeRawValue) |
+            (1 << Self.dockControlEventTypeRawValue) |
             (1 << Self.swipeEventTypeRawValue) |
             (1 << CGEventType.flagsChanged.rawValue)
 
@@ -123,6 +125,18 @@ final class GestureEventTap {
             return Unmanaged.passUnretained(event)
         }
 
+        let now = ProcessInfo.processInfo.systemUptime
+
+        // Dock fluid gesture events (type 30) drive the live Desktop Space-sliding animation.
+        // Swallow them whenever ⌘ is held (and briefly after a suppressed gesture) so the
+        // desktop never starts sliding at all.
+        if type.rawValue == Self.dockControlEventTypeRawValue {
+            if commandOnly || isSuppressingGesture || (now - lastSuppressedTouchTime) < 0.30 {
+                return nil
+            }
+            return Unmanaged.passUnretained(event)
+        }
+
         // Legacy 3-finger swipe event: swallow while exact ⌘ is held.
         if type.rawValue == Self.swipeEventTypeRawValue {
             return commandOnly ? nil : Unmanaged.passUnretained(event)
@@ -131,8 +145,6 @@ final class GestureEventTap {
         guard type.rawValue == Self.gestureEventTypeRawValue else {
             return Unmanaged.passUnretained(event)
         }
-
-        let now = ProcessInfo.processInfo.systemUptime
 
         guard let nsEvent = NSEvent(cgEvent: event) else {
             return commandOnly ? nil : Unmanaged.passUnretained(event)

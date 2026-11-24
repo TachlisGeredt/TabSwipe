@@ -54,8 +54,8 @@ public final class SwipeRecognizer {
     private var state: State = .idle
 
     public init(
-        horizontalThreshold: Double = 0.075,
-        horizontalDominanceRatio: Double = 1.5
+        horizontalThreshold: Double = 0.035,
+        horizontalDominanceRatio: Double = 1.35
     ) {
         self.horizontalThreshold = horizontalThreshold
         self.horizontalDominanceRatio = horizontalDominanceRatio
