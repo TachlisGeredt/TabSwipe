@@ -54,8 +54,14 @@ make install
 ### Grant Accessibility Permission
 
 1. `make install` automatically registers `tabswipe` with macOS and opens **System Settings → Privacy & Security → Accessibility**.
-2. Enable the toggle next to **tabswipe** *(if you reinstalled over an older build, toggle it off and back on)*.
+2. Enable the toggle next to **tabswipe** *(if you reinstalled over an older ad-hoc build, remove `tabswipe` with **−** and re-add `~/.local/bin/tabswipe` with **+**)*.
 3. TabSwipe checks quietly every 5 seconds and activates automatically once granted. *(If `tabswipe` doesn't appear automatically, click **+** and add `~/.local/bin/tabswipe`.)*
+
+#### Optional: Keep Accessibility Permission Across Rebuilds
+If you modify and rebuild TabSwipe often, create a free local self-signed certificate once in **Keychain Access**:
+1. Open **Keychain Access** → menu bar **Keychain Access → Certificate Assistant → Create a Certificate…**
+2. Set **Name** to `TabSwipe`, **Identity Type** to `Self Signed Root`, and **Certificate Type** to `Code Signing`, then click **Create**.
+3. `make install` automatically detects the `TabSwipe` certificate (or `TABSWIPE_CODESIGN_IDENTITY`) and signs with it so macOS preserves Accessibility permission on every future rebuild.
 
 ## Commands
 

@@ -53,8 +53,17 @@ enum LaunchAgentManager {
             try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: destinationURL.path)
         }
 
-        // Ad-hoc sign so macOS tracks the binary cleanly in Accessibility settings.
-        _ = runProcess("/usr/bin/codesign", arguments: ["--force", "--sign", "-", destinationURL.path])
+        // Sign with a local Code Signing certificate if present (keeps Accessibility permission
+        // across rebuilds); otherwise fall back to ad-hoc signing.
+        let signingIdentity = preferredCodesignIdentity()
+        if let identity = signingIdentity {
+            _ = runProcess(
+                "/usr/bin/codesign",
+                arguments: ["--force", "--sign", identity, "--identifier", label, destinationURL.path]
+            )
+        } else {
+            _ = runProcess("/usr/bin/codesign", arguments: ["--force", "--sign", "-", destinationURL.path])
+        }
 
         let plistData = makeLaunchAgentPlist(binaryPath: destinationURL.path, logPath: logURL.path)
         try plistData.write(to: plistURL, options: .atomic)
@@ -70,6 +79,7 @@ enum LaunchAgentManager {
 
         print("TabSwipe installed and started.")
         print("  Binary:      \(destinationURL.path)")
+        print("  Signing:     \(signingIdentity ?? "ad-hoc (rebuilds may require re-granting Accessibility)")")
         print("  LaunchAgent: \(plistURL.path)")
         print("  Log:         \(logURL.path)")
         print("")
@@ -125,6 +135,15 @@ enum LaunchAgentManager {
                 }
             }
         }
+    }
+
+    private static func preferredCodesignIdentity() -> String? {
+        let candidate = ProcessInfo.processInfo.environment["TABSWIPE_CODESIGN_IDENTITY"] ?? "TabSwipe"
+        let result = runProcess("/usr/bin/security", arguments: ["find-identity", "-v", "-p", "codesigning"])
+        guard result.exitCode == 0, result.stdout.contains("\"\(candidate)\"") else {
+            return nil
+        }
+        return candidate
     }
 
     private static func makeLaunchAgentPlist(binaryPath: String, logPath: String) -> Data {
