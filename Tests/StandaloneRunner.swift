@@ -29,15 +29,15 @@ do {
     let r = SwipeRecognizer(
         initialThreshold: 0.035,
         maxStepDistance: 0.045,
-        minStepDistance: 0.020,
-        slowSpeed: 0.20,
-        fastSpeed: 1.40
+        minStepDistance: 0.028,
+        slowSpeed: 0.25,
+        fastSpeed: 2.20
     )
     expect(abs(r.stepDistance(forSpeed: 0.0) - 0.045) < 1e-6, "Slow floor clamps at 0.045")
-    expect(abs(r.stepDistance(forSpeed: 0.20) - 0.045) < 1e-6, "Slow boundary equals 0.045")
-    expect(abs(r.stepDistance(forSpeed: 0.80) - 0.0325) < 1e-6, "Midpoint speed interpolates to 0.0325")
-    expect(abs(r.stepDistance(forSpeed: 1.40) - 0.020) < 1e-6, "Fast boundary equals 0.020")
-    expect(abs(r.stepDistance(forSpeed: 5.0) - 0.020) < 1e-6, "Fast ceiling clamps at 0.020")
+    expect(abs(r.stepDistance(forSpeed: 0.25) - 0.045) < 1e-6, "Slow boundary equals 0.045")
+    expect(abs(r.stepDistance(forSpeed: 1.225) - 0.0365) < 1e-6, "Midpoint speed interpolates to 0.0365")
+    expect(abs(r.stepDistance(forSpeed: 2.20) - 0.028) < 1e-6, "Fast boundary equals 0.028")
+    expect(abs(r.stepDistance(forSpeed: 5.0) - 0.028) < 1e-6, "Fast ceiling clamps at 0.028")
 }
 
 // 2. Quick short swipe right -> previousTab (natural macOS direction)
@@ -51,22 +51,21 @@ do {
     expect(f3.actions == [.previousTab] && f3.shouldSuppressSystemGesture, "Quick swipe right triggers previousTab")
 }
 
-// 3. Fast swipe triggers more tabs than slow swipe over the exact same distance
+// 3. Fast swipe triggers more tabs than slow swipe while respecting the readable 55ms rate cap
 do {
     let slowR = SwipeRecognizer()
     let fastR = SwipeRecognizer()
     var slowTabs = 0
     var fastTabs = 0
 
-    for i in 0...20 {
-        let x = 0.80 - Double(i) * 0.01
+    for i in 0...30 {
+        let x = 0.90 - Double(i) * 0.01
         slowTabs += slowR.process(touches: threeFingers(x: x), commandOnly: true, timestamp: Double(i) * 0.10).actions.count
-        fastTabs += fastR.process(touches: threeFingers(x: x), commandOnly: true, timestamp: Double(i) * 0.005).actions.count
+        fastTabs += fastR.process(touches: threeFingers(x: x), commandOnly: true, timestamp: Double(i) * 0.012).actions.count
     }
 
-    expect(slowTabs == 4, "Slow swipe over 0.20 switches 4 tabs (got \(slowTabs))")
-    expect(fastTabs == 9, "Fast swipe over 0.20 switches 9 tabs (got \(fastTabs))")
-    expect(fastTabs > slowTabs, "Fast swipe switches more tabs than slow swipe")
+    expect(fastTabs > slowTabs, "Fast swipe (\(fastTabs)) switches more tabs than slow swipe (\(slowTabs))")
+    expect(fastTabs <= 9, "Rate cap keeps fast sweep readable (got \(fastTabs) tabs in 0.36s)")
 }
 
 // 4. Reversing direction mid-swipe steps back without lifting

@@ -83,7 +83,7 @@ If you modify and rebuild TabSwipe often, create a free local self-signed certif
 Want to add a browser or tweak swipe sensitivity?
 
 - **Add a browser**: Add its macOS bundle ID to `Sources/TabSwipeCore/BrowserRegistry.swift`.
-- **Adjust swipe spacing & acceleration**: Change `initialThreshold` (default `0.035`), `maxStepDistance` (slow, default `0.045`), `minStepDistance` (fast, default `0.020`), `slowSpeed` (`0.20`), and `fastSpeed` (`1.40`) in `Sources/TabSwipeCore/SwipeRecognizer.swift`.
+- **Adjust swipe spacing & acceleration**: Change `initialThreshold` (default `0.035`), `maxStepDistance` (slow, default `0.045`), `minStepDistance` (fast, default `0.028`), `slowSpeed` (`0.25`), `fastSpeed` (`2.20`), and `minStepInterval` (default `0.038`s) in `Sources/TabSwipeCore/SwipeRecognizer.swift`.
 - **Adjust Taptic click strength**: Change `actuationID` (default `3` = light detent, `4` = medium, `6` = firm) in `Sources/tabswipe/HapticFeedback.swift`.
 - Rebuild and reinstall:
 

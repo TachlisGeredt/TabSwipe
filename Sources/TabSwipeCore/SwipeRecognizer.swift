@@ -62,6 +62,9 @@ public final class SwipeRecognizer {
     /// Normalized finger speed (trackpad widths/sec) at or above which `minStepDistance` applies.
     public let fastSpeed: Double
 
+    /// Minimum time (seconds) between consecutive tab switches so every tab & click stays readable.
+    public let minStepInterval: TimeInterval
+
     /// Minimum ratio of horizontal-to-vertical movement (`|dx| / |dy|`) to lock in as horizontal.
     public let horizontalDominanceRatio: Double
 
@@ -71,20 +74,19 @@ public final class SwipeRecognizer {
     /// Minimum time delta (seconds) between frames to prevent velocity spikes on jittered timestamps.
     private let minDeltaTime: TimeInterval = 0.004
 
-    /// Safety cap on how many tab steps a single touch frame can emit.
-    private let maxStepsPerFrame = 3
-
     private var state: State = .idle
     private var lastX: Double?
     private var lastTimestamp: TimeInterval?
+    private var lastStepTimestamp: TimeInterval = -.infinity
     private var smoothedSpeed: Double = 0.0
 
     public init(
         initialThreshold: Double = 0.035,
         maxStepDistance: Double = 0.045,
-        minStepDistance: Double = 0.020,
-        slowSpeed: Double = 0.20,
-        fastSpeed: Double = 1.40,
+        minStepDistance: Double = 0.028,
+        slowSpeed: Double = 0.25,
+        fastSpeed: Double = 2.20,
+        minStepInterval: TimeInterval = 0.038,
         horizontalDominanceRatio: Double = 1.35
     ) {
         self.initialThreshold = initialThreshold
@@ -92,6 +94,7 @@ public final class SwipeRecognizer {
         self.minStepDistance = minStepDistance
         self.slowSpeed = slowSpeed
         self.fastSpeed = fastSpeed
+        self.minStepInterval = minStepInterval
         self.horizontalDominanceRatio = horizontalDominanceRatio
     }
 
@@ -100,6 +103,7 @@ public final class SwipeRecognizer {
         state = .idle
         lastX = nil
         lastTimestamp = nil
+        lastStepTimestamp = -.infinity
         smoothedSpeed = 0.0
     }
 
@@ -152,36 +156,24 @@ public final class SwipeRecognizer {
             }
 
             if absX >= initialThreshold && absX > absY * horizontalDominanceRatio {
-                var actions: [SwipeAction] = [dx < 0 ? .nextTab : .previousTab]
-                var currentAnchorX = anchorX + (dx > 0 ? initialThreshold : -initialThreshold)
-
-                // If a single fast frame crossed additional detents, emit them smoothly too.
-                while actions.count < maxStepsPerFrame {
-                    let remaining = avgX - currentAnchorX
-                    guard abs(remaining) >= currentStep else { break }
-                    actions.append(remaining < 0 ? .nextTab : .previousTab)
-                    currentAnchorX += (remaining > 0 ? currentStep : -currentStep)
-                }
-
-                state = .scrubbing(anchorX: currentAnchorX)
-                return SwipeResult(actions: actions, shouldSuppressSystemGesture: true)
+                let action: SwipeAction = dx < 0 ? .nextTab : .previousTab
+                lastStepTimestamp = timestamp
+                state = .scrubbing(anchorX: avgX)
+                return SwipeResult(actions: [action], shouldSuppressSystemGesture: true)
             }
 
             return SwipeResult(actions: [], shouldSuppressSystemGesture: true)
 
         case .scrubbing(let anchorX):
-            var currentAnchorX = anchorX
-            var actions: [SwipeAction] = []
-
-            while actions.count < maxStepsPerFrame {
-                let dx = avgX - currentAnchorX
-                guard abs(dx) >= currentStep else { break }
-                actions.append(dx < 0 ? .nextTab : .previousTab)
-                currentAnchorX += (dx > 0 ? currentStep : -currentStep)
+            let dx = avgX - anchorX
+            if abs(dx) >= currentStep && (timestamp - lastStepTimestamp) >= minStepInterval {
+                let action: SwipeAction = dx < 0 ? .nextTab : .previousTab
+                lastStepTimestamp = timestamp
+                state = .scrubbing(anchorX: avgX)
+                return SwipeResult(actions: [action], shouldSuppressSystemGesture: true)
             }
 
-            state = .scrubbing(anchorX: currentAnchorX)
-            return SwipeResult(actions: actions, shouldSuppressSystemGesture: true)
+            return SwipeResult(actions: [], shouldSuppressSystemGesture: true)
 
         case .ignored:
             return SwipeResult(actions: [], shouldSuppressSystemGesture: true)

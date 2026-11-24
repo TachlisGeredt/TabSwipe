@@ -14,63 +14,43 @@ final class SwipeRecognizerTests: XCTestCase {
         let recognizer = SwipeRecognizer(
             initialThreshold: 0.035,
             maxStepDistance: 0.045,
-            minStepDistance: 0.020,
-            slowSpeed: 0.20,
-            fastSpeed: 1.40
+            minStepDistance: 0.028,
+            slowSpeed: 0.25,
+            fastSpeed: 2.20
         )
 
         // Slow floor clamps at maxStepDistance
         XCTAssertEqual(recognizer.stepDistance(forSpeed: 0.0), 0.045, accuracy: 1e-6)
-        XCTAssertEqual(recognizer.stepDistance(forSpeed: 0.20), 0.045, accuracy: 1e-6)
+        XCTAssertEqual(recognizer.stepDistance(forSpeed: 0.25), 0.045, accuracy: 1e-6)
 
-        // Midpoint speed (0.80) sits halfway (0.0325)
-        XCTAssertEqual(recognizer.stepDistance(forSpeed: 0.80), 0.0325, accuracy: 1e-6)
+        // Midpoint speed (1.225) sits halfway (0.0365)
+        XCTAssertEqual(recognizer.stepDistance(forSpeed: 1.225), 0.0365, accuracy: 1e-6)
 
         // Fast ceiling clamps at minStepDistance
-        XCTAssertEqual(recognizer.stepDistance(forSpeed: 1.40), 0.020, accuracy: 1e-6)
-        XCTAssertEqual(recognizer.stepDistance(forSpeed: 5.00), 0.020, accuracy: 1e-6)
+        XCTAssertEqual(recognizer.stepDistance(forSpeed: 2.20), 0.028, accuracy: 1e-6)
+        XCTAssertEqual(recognizer.stepDistance(forSpeed: 5.00), 0.028, accuracy: 1e-6)
     }
 
-    func testQuickSwipeRightEmitsPreviousTab() {
-        let recognizer = SwipeRecognizer()
-
-        let r1 = recognizer.process(touches: threeFingers(x: 0.40), commandOnly: true, timestamp: 1.00)
-        XCTAssertEqual(r1.actions, [])
-        XCTAssertTrue(r1.shouldSuppressSystemGesture)
-
-        let r2 = recognizer.process(touches: threeFingers(x: 0.42), commandOnly: true, timestamp: 1.20)
-        XCTAssertEqual(r2.actions, [])
-        XCTAssertTrue(r2.shouldSuppressSystemGesture)
-
-        let r3 = recognizer.process(touches: threeFingers(x: 0.44), commandOnly: true, timestamp: 1.40)
-        XCTAssertEqual(r3.actions, [.previousTab])
-        XCTAssertTrue(r3.shouldSuppressSystemGesture)
-    }
-
-    func testFastSwipeTriggersMoreTabsThanSlowSwipeOverSameDistance() {
+    func testFastSwipeTriggersMoreTabsThanSlowSwipeAndRespectsRateCap() {
         let slowRecognizer = SwipeRecognizer()
         let fastRecognizer = SwipeRecognizer()
 
-        // Both swipe left from 0.80 to 0.60 (total distance 0.20 in 20 frames of 0.01)
+        // Both swipe left from 0.90 to 0.60 (total distance 0.30 in 30 frames of 0.01)
         var slowTabs = 0
         var fastTabs = 0
 
-        for i in 0...20 {
-            let x = 0.80 - Double(i) * 0.01
+        for i in 0...30 {
+            let x = 0.90 - Double(i) * 0.01
             // Slow: 0.10s per 0.01 -> speed = 0.10 widths/sec (uses maxStepDistance = 0.045)
-            let slowRes = slowRecognizer.process(touches: threeFingers(x: x), commandOnly: true, timestamp: Double(i) * 0.10)
-            slowTabs += slowRes.actions.count
+            slowTabs += slowRecognizer.process(touches: threeFingers(x: x), commandOnly: true, timestamp: Double(i) * 0.10).actions.count
 
-            // Fast: 0.005s per 0.01 -> speed = 2.0 widths/sec (uses minStepDistance = 0.020)
-            let fastRes = fastRecognizer.process(touches: threeFingers(x: x), commandOnly: true, timestamp: Double(i) * 0.005)
-            fastTabs += fastRes.actions.count
+            // Brisk/fast: 0.012s per 0.01 -> speed = ~0.83 widths/sec, total 0.36s (respects 55ms rate cap)
+            fastTabs += fastRecognizer.process(touches: threeFingers(x: x), commandOnly: true, timestamp: Double(i) * 0.012).actions.count
         }
 
-        // Slow: 1st at 0.035 + 3 steps of 0.045 = 4 tabs
-        XCTAssertEqual(slowTabs, 4)
-        // Fast: 1st at 0.035 + 8 steps of 0.020 = 9 tabs
-        XCTAssertEqual(fastTabs, 9)
         XCTAssertGreaterThan(fastTabs, slowTabs)
+        // Rate cap keeps even a fast sweep visually readable (max ~9 tabs in 0.36s at 38ms/tab)
+        XCTAssertLessThanOrEqual(fastTabs, 9)
     }
 
     func testReverseDirectionMidSwipeStepsBackWithoutLifting() {

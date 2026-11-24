@@ -6,7 +6,7 @@ This file gives human contributors and AI coding agents a fast, accurate map of 
 
 - **Ultra-lightweight**: Invisible macOS LaunchAgent daemon (`NSApplication.setActivationPolicy(.prohibited)`), zero UI, zero third-party dependencies, zero config files.
 - **Browser-only interception**: Never keep the `CGEventTap` enabled outside supported browsers. `WorkspaceMonitor` must remain event-driven (`NSWorkspace.didActivateApplicationNotification`), with zero polling.
-- **Exact `⌘`-only velocity-sensitive scrubbing + Taptic Engine clicks**: Left or Right `⌘` without `⇧`/`⌥`/`⌃`; 3-finger swipe left → next tab, swipe right → previous tab; switches another tab along a continuous velocity gradient (`maxStepDistance = 0.045` slow → `minStepDistance = 0.020` fast, with mid-swipe reversal) and triggers a trackpad Taptic Engine detent click on every tab switch.
+- **Exact `⌘`-only velocity-sensitive scrubbing + Taptic Engine clicks**: Left or Right `⌘` without `⇧`/`⌥`/`⌃`; 3-finger swipe left → next tab, swipe right → previous tab; switches another tab along a continuous velocity gradient (`maxStepDistance = 0.045` slow → `minStepDistance = 0.028` fast, rate-capped at `minStepInterval = 0.038`s, with mid-swipe reversal) and triggers a trackpad Taptic Engine detent click on every tab switch.
 
 ## Repository Layout
 
@@ -48,7 +48,7 @@ No full Xcode installation is required — Apple Command Line Tools (`swiftc`) i
 3. Add a test case in `Tests/TabSwipeTests/BrowserRegistryTests.swift`.
 
 ### Adjusting Gesture Sensitivity, Direction, or Haptics
-- Edit `initialThreshold` (default `0.035`), `maxStepDistance` (default `0.045`), `minStepDistance` (default `0.020`), `slowSpeed` (`0.20`), `fastSpeed` (`1.40`), or `horizontalDominanceRatio` (default `1.35`) in `Sources/TabSwipeCore/SwipeRecognizer.swift`.
+- Edit `initialThreshold` (default `0.035`), `maxStepDistance` (default `0.045`), `minStepDistance` (default `0.028`), `slowSpeed` (`0.25`), `fastSpeed` (`2.20`), `minStepInterval` (`0.038`s), or `horizontalDominanceRatio` (default `1.35`) in `Sources/TabSwipeCore/SwipeRecognizer.swift`.
 - Edit `actuationID` (default `3` = light detent, `4` = medium, `6` = firm) in `Sources/tabswipe/HapticFeedback.swift`.
 - Keep `TabSwipeCore` free of `AppKit`/`CoreGraphics` imports so `SwipeRecognizer` stays fast and unit-testable.
 
