@@ -55,13 +55,17 @@ enum LaunchAgentManager {
 
         // Sign with a local Code Signing certificate if present (keeps Accessibility permission
         // across rebuilds); otherwise fall back to ad-hoc signing.
-        let signingIdentity = preferredCodesignIdentity()
-        if let identity = signingIdentity {
-            _ = runProcess(
+        var usedIdentity: String? = nil
+        if let identity = preferredCodesignIdentity() {
+            let signResult = runProcess(
                 "/usr/bin/codesign",
                 arguments: ["--force", "--sign", identity, "--identifier", label, destinationURL.path]
             )
-        } else {
+            if signResult.exitCode == 0 {
+                usedIdentity = identity
+            }
+        }
+        if usedIdentity == nil {
             _ = runProcess("/usr/bin/codesign", arguments: ["--force", "--sign", "-", destinationURL.path])
         }
 
@@ -79,20 +83,14 @@ enum LaunchAgentManager {
 
         print("TabSwipe installed and started.")
         print("  Binary:      \(destinationURL.path)")
-        print("  Signing:     \(signingIdentity ?? "ad-hoc (rebuilds may require re-granting Accessibility)")")
+        print("  Signing:     \(usedIdentity ?? "ad-hoc (rebuilds may require re-granting Accessibility)")")
         print("  LaunchAgent: \(plistURL.path)")
         print("  Log:         \(logURL.path)")
         print("")
-        print("Grant Accessibility permission if you haven't already:")
-        print("  1. System Settings -> Privacy & Security -> Accessibility will open automatically.")
-        print("  2. Enable the toggle next to 'tabswipe' (if it was already enabled from an older build, toggle it off and back on).")
-        print("  3. TabSwipe will activate automatically within 5 seconds.")
+        print("Grant Accessibility permission if prompted:")
+        print("  1. Click 'Open System Settings' on the macOS prompt and enable 'tabswipe'.")
+        print("  2. TabSwipe will activate automatically within 5 seconds.")
         print("     (If 'tabswipe' doesn't appear in the list, click '+' and add: \(destinationURL.path))")
-
-        // Give launchd a brief moment to launch the daemon and register the binary with TCC,
-        // then open System Settings -> Accessibility directly.
-        Thread.sleep(forTimeInterval: 0.4)
-        PermissionsManager.openAccessibilitySettings()
     }
 
     static func uninstall() throws {
@@ -139,7 +137,8 @@ enum LaunchAgentManager {
 
     private static func preferredCodesignIdentity() -> String? {
         let candidate = ProcessInfo.processInfo.environment["TABSWIPE_CODESIGN_IDENTITY"] ?? "TabSwipe"
-        let result = runProcess("/usr/bin/security", arguments: ["find-identity", "-v", "-p", "codesigning"])
+        // Omit `-v` so newly created local self-signed certs are detected even before marking Always Trust.
+        let result = runProcess("/usr/bin/security", arguments: ["find-identity", "-p", "codesigning"])
         guard result.exitCode == 0, result.stdout.contains("\"\(candidate)\"") else {
             return nil
         }
