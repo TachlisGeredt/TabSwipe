@@ -10,7 +10,7 @@ final class SwipeRecognizerTests: XCTestCase {
         ]
     }
 
-    func testSwipeRightEmitsNextTabOnce() {
+    func testSwipeRightEmitsPreviousTabOnce() {
         let recognizer = SwipeRecognizer(horizontalThreshold: 0.075)
 
         // Anchor at x = 0.40
@@ -23,9 +23,9 @@ final class SwipeRecognizerTests: XCTestCase {
         XCTAssertNil(r2.action)
         XCTAssertTrue(r2.shouldSuppressSystemGesture)
 
-        // Crosses threshold (dx = +0.09) -> nextTab
+        // Crosses threshold (dx = +0.09) -> previousTab (natural macOS direction)
         let r3 = recognizer.process(touches: threeFingers(x: 0.49), commandOnly: true)
-        XCTAssertEqual(r3.action, .nextTab)
+        XCTAssertEqual(r3.action, .previousTab)
         XCTAssertTrue(r3.shouldSuppressSystemGesture)
 
         // Continuing to slide right stays locked (strictly single-step: 1 swipe = 1 tab)
@@ -34,12 +34,12 @@ final class SwipeRecognizerTests: XCTestCase {
         XCTAssertTrue(r4.shouldSuppressSystemGesture)
     }
 
-    func testSwipeLeftEmitsPreviousTabOnce() {
+    func testSwipeLeftEmitsNextTabOnce() {
         let recognizer = SwipeRecognizer(horizontalThreshold: 0.075)
 
         _ = recognizer.process(touches: threeFingers(x: 0.60), commandOnly: true)
         let result = recognizer.process(touches: threeFingers(x: 0.50), commandOnly: true)
-        XCTAssertEqual(result.action, .previousTab)
+        XCTAssertEqual(result.action, .nextTab)
         XCTAssertTrue(result.shouldSuppressSystemGesture)
 
         // Continued left movement does not double-trigger
@@ -51,8 +51,8 @@ final class SwipeRecognizerTests: XCTestCase {
     func testLiftFingersWhileHoldingCommandAllowsRepeatSwipe() {
         let recognizer = SwipeRecognizer(horizontalThreshold: 0.075)
 
-        // First swipe right
-        _ = recognizer.process(touches: threeFingers(x: 0.40), commandOnly: true)
+        // First swipe left -> nextTab
+        _ = recognizer.process(touches: threeFingers(x: 0.60), commandOnly: true)
         let first = recognizer.process(touches: threeFingers(x: 0.50), commandOnly: true)
         XCTAssertEqual(first.action, .nextTab)
 
@@ -61,8 +61,8 @@ final class SwipeRecognizerTests: XCTestCase {
         XCTAssertNil(lift.action)
         XCTAssertFalse(lift.shouldSuppressSystemGesture)
 
-        // Second swipe right without releasing ⌘
-        _ = recognizer.process(touches: threeFingers(x: 0.40), commandOnly: true)
+        // Second swipe left without releasing ⌘
+        _ = recognizer.process(touches: threeFingers(x: 0.60), commandOnly: true)
         let second = recognizer.process(touches: threeFingers(x: 0.50), commandOnly: true)
         XCTAssertEqual(second.action, .nextTab)
     }

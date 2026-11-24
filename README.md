@@ -5,8 +5,8 @@ Ultra-lightweight macOS background utility that lets you hold **⌘ Command** an
 - **Zero UI, zero config files, zero dependencies** — pure native Swift LaunchAgent daemon (~3–6 MB RAM, ~0.0% idle CPU).
 - **Browser-only activation** — listens for active-app changes via `NSWorkspace` (zero polling) and **disables its event tap completely** whenever a non-browser app is focused.
 - **Intuitive single-step gesture**:
-  - Hold **⌘** (Left or Right, no other modifiers) + **3-finger swipe right** → move 1 tab right.
-  - Hold **⌘** + **3-finger swipe left** → move 1 tab left.
+  - Hold **⌘** (Left or Right, no other modifiers) + **3-finger swipe left** → move 1 tab right (next tab, matching macOS Spaces natural direction).
+  - Hold **⌘** + **3-finger swipe right** → move 1 tab left (previous tab).
   - Keep holding **⌘**, lift your fingers, and swipe again to keep stepping through tabs.
   - Release **⌘** → normal macOS 3-finger Space switching works untouched.
 

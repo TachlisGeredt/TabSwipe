@@ -110,7 +110,10 @@ final class GestureEventTap {
             return Unmanaged.passUnretained(event)
         }
 
-        let commandOnly = isCommandOnly(event.flags)
+        // Always read live HID keyboard modifier flags: macOS synthesized Dock/Spaces packets on
+        // event type 29 often arrive with event.flags == 0 even while ⌘ is physically held down.
+        let liveFlags = CGEventSource.flagsState(.hidSystemState)
+        let commandOnly = isCommandOnly(liveFlags)
 
         if type == .flagsChanged {
             if !commandOnly {
@@ -129,25 +132,27 @@ final class GestureEventTap {
             return Unmanaged.passUnretained(event)
         }
 
-        guard commandOnly else {
-            recognizer.reset()
-            isSuppressingGesture = false
-            return Unmanaged.passUnretained(event)
-        }
+        let now = ProcessInfo.processInfo.systemUptime
 
         guard let nsEvent = NSEvent(cgEvent: event) else {
-            return Unmanaged.passUnretained(event)
+            return commandOnly ? nil : Unmanaged.passUnretained(event)
         }
 
         let allTouches = nsEvent.allTouches()
-        let now = ProcessInfo.processInfo.systemUptime
 
-        // Synthesized Dock/Spaces gesture packets arrive on event type 29 with no NSTouch payload.
-        // Swallow them while we are actively suppressing a ⌘ + 3-finger gesture.
+        // Synthesized Dock/Spaces fluid-gesture packets arrive on event type 29 with no NSTouch
+        // payload. Swallow them immediately whenever ⌘ is held (and briefly after) so macOS never
+        // starts sliding the desktop Space.
         if allTouches.isEmpty {
-            if isSuppressingGesture || (now - lastSuppressedTouchTime) < 0.25 {
+            if commandOnly || isSuppressingGesture || (now - lastSuppressedTouchTime) < 0.30 {
                 return nil
             }
+            return Unmanaged.passUnretained(event)
+        }
+
+        guard commandOnly else {
+            recognizer.reset()
+            isSuppressingGesture = false
             return Unmanaged.passUnretained(event)
         }
 

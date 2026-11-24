@@ -24,7 +24,7 @@ private func threeFingers(x: Double, y: Double = 0.5) -> [TouchPoint] {
     ]
 }
 
-// 1. Swipe right -> nextTab once (single-step)
+// 1. Swipe right -> previousTab once (natural macOS direction, single-step)
 do {
     let r = SwipeRecognizer(horizontalThreshold: 0.075)
     let f1 = r.process(touches: threeFingers(x: 0.40), commandOnly: true)
@@ -32,17 +32,17 @@ do {
     let f2 = r.process(touches: threeFingers(x: 0.44), commandOnly: true)
     expect(f2.action == nil && f2.shouldSuppressSystemGesture, "Sub-threshold frame does not fire")
     let f3 = r.process(touches: threeFingers(x: 0.49), commandOnly: true)
-    expect(f3.action == .nextTab && f3.shouldSuppressSystemGesture, "Swipe right triggers nextTab")
+    expect(f3.action == .previousTab && f3.shouldSuppressSystemGesture, "Swipe right triggers previousTab")
     let f4 = r.process(touches: threeFingers(x: 0.70), commandOnly: true)
     expect(f4.action == nil && f4.shouldSuppressSystemGesture, "Continued slide stays single-step")
 }
 
-// 2. Swipe left -> previousTab once
+// 2. Swipe left -> nextTab once
 do {
     let r = SwipeRecognizer(horizontalThreshold: 0.075)
     _ = r.process(touches: threeFingers(x: 0.60), commandOnly: true)
     let f2 = r.process(touches: threeFingers(x: 0.50), commandOnly: true)
-    expect(f2.action == .previousTab && f2.shouldSuppressSystemGesture, "Swipe left triggers previousTab")
+    expect(f2.action == .nextTab && f2.shouldSuppressSystemGesture, "Swipe left triggers nextTab")
     let f3 = r.process(touches: threeFingers(x: 0.30), commandOnly: true)
     expect(f3.action == nil && f3.shouldSuppressSystemGesture, "Continued left slide stays single-step")
 }
@@ -50,11 +50,11 @@ do {
 // 3. Lift fingers while holding Command allows repeat swipe
 do {
     let r = SwipeRecognizer(horizontalThreshold: 0.075)
-    _ = r.process(touches: threeFingers(x: 0.40), commandOnly: true)
+    _ = r.process(touches: threeFingers(x: 0.60), commandOnly: true)
     expect(r.process(touches: threeFingers(x: 0.50), commandOnly: true).action == .nextTab, "First swipe fires")
     let lift = r.process(touches: [], commandOnly: true)
     expect(lift.action == nil && !lift.shouldSuppressSystemGesture, "Finger lift resets")
-    _ = r.process(touches: threeFingers(x: 0.40), commandOnly: true)
+    _ = r.process(touches: threeFingers(x: 0.60), commandOnly: true)
     expect(r.process(touches: threeFingers(x: 0.50), commandOnly: true).action == .nextTab, "Second swipe fires without releasing Command")
 }
 

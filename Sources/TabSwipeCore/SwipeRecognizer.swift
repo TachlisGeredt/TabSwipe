@@ -13,9 +13,9 @@ public struct TouchPoint: Equatable, Sendable {
 
 /// Tab switch direction emitted by `SwipeRecognizer`.
 public enum SwipeAction: Equatable, Sendable {
-    /// Swipe fingers right → move 1 tab to the right.
+    /// Natural swipe left (`dx < 0`) → move 1 tab to the right.
     case nextTab
-    /// Swipe fingers left → move 1 tab to the left.
+    /// Natural swipe right (`dx > 0`) → move 1 tab to the left.
     case previousTab
 }
 
@@ -102,7 +102,9 @@ public final class SwipeRecognizer {
 
             if absX >= horizontalThreshold && absX > absY * horizontalDominanceRatio {
                 state = .triggered
-                let action: SwipeAction = dx > 0 ? .nextTab : .previousTab
+                // Natural macOS direction: swipe fingers left (dx < 0) -> next tab (right);
+                // swipe fingers right (dx > 0) -> previous tab (left).
+                let action: SwipeAction = dx < 0 ? .nextTab : .previousTab
                 return SwipeResult(action: action, shouldSuppressSystemGesture: true)
             }
 
