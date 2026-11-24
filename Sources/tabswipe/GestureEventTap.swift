@@ -178,7 +178,7 @@ final class GestureEventTap {
             lastSuppressedTouchTime = now
         }
 
-        if let action = result.action {
+        for action in result.actions {
             onSwipe(action)
         }
 

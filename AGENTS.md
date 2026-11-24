@@ -6,7 +6,7 @@ This file gives human contributors and AI coding agents a fast, accurate map of 
 
 - **Ultra-lightweight**: Invisible macOS LaunchAgent daemon (`NSApplication.setActivationPolicy(.prohibited)`), zero UI, zero third-party dependencies, zero config files.
 - **Browser-only interception**: Never keep the `CGEventTap` enabled outside supported browsers. `WorkspaceMonitor` must remain event-driven (`NSWorkspace.didActivateApplicationNotification`), with zero polling.
-- **Exact `⌘`-only single-step gesture**: Left or Right `⌘` without `⇧`/`⌥`/`⌃`; 3-finger swipe right → next tab, swipe left → previous tab; 1 swipe = 1 tab; lift fingers while holding `⌘` to swipe again.
+- **Exact `⌘`-only continuous scrubbing + Taptic Engine clicks**: Left or Right `⌘` without `⇧`/`⌥`/`⌃`; 3-finger swipe left → next tab, swipe right → previous tab; switches another tab every `stepDistance` (with mid-swipe reversal) and triggers a trackpad Taptic Engine detent click on every tab switch.
 
 ## Repository Layout
 
@@ -20,8 +20,9 @@ Sources/
     ├── main.swift                      # Subcommands: install, uninstall, status, run
     ├── DaemonRunner.swift              # Main lifecycle coordinator & signal handling
     ├── WorkspaceMonitor.swift          # Event-driven frontmost-app browser detector
-    ├── GestureEventTap.swift           # CGEventTap (type 29 & 31 + flagsChanged)
+    ├── GestureEventTap.swift           # CGEventTap (type 29, 30 & 31 + flagsChanged)
     ├── TabSwitcher.swift               # Synthesizes CGEvent keystrokes to browser PID
+    ├── HapticFeedback.swift            # Dynamic MTActuator Taptic Engine click (+ AppKit fallback)
     ├── PermissionsManager.swift        # AXIsProcessTrusted() check & 5s quiet wait loop
     └── LaunchAgentManager.swift        # Installs/uninstalls ~/.local/bin/tabswipe & plist
 Tests/
@@ -46,8 +47,9 @@ No full Xcode installation is required — Apple Command Line Tools (`swiftc`) i
 2. Add it to `BrowserRegistry.browsers` in `Sources/TabSwipeCore/BrowserRegistry.swift` with `.standard` (`⌘⇧]` / `⌘⇧[`) or a custom `BrowserShortcuts`.
 3. Add a test case in `Tests/TabSwipeTests/BrowserRegistryTests.swift`.
 
-### Adjusting Gesture Sensitivity or Direction
-- Edit `horizontalThreshold` (default `0.035` of normalized trackpad width) or `horizontalDominanceRatio` (default `1.35`) in `Sources/TabSwipeCore/SwipeRecognizer.swift`.
+### Adjusting Gesture Sensitivity, Direction, or Haptics
+- Edit `initialThreshold` (default `0.035`), `stepDistance` (default `0.045`), or `horizontalDominanceRatio` (default `1.35`) in `Sources/TabSwipeCore/SwipeRecognizer.swift`.
+- Edit `actuationID` (default `3` = light detent, `4` = medium, `6` = firm) in `Sources/tabswipe/HapticFeedback.swift`.
 - Keep `TabSwipeCore` free of `AppKit`/`CoreGraphics` imports so `SwipeRecognizer` stays fast and unit-testable.
 
 ## macOS Implementation Gotchas

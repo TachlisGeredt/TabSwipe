@@ -6,6 +6,7 @@ import TabSwipeCore
 final class DaemonRunner {
     private let permissions = PermissionsManager()
     private let tabSwitcher = TabSwitcher()
+    private let haptics = HapticFeedback()
     private var workspaceMonitor: WorkspaceMonitor?
     private var gestureTap: GestureEventTap?
     private var activeBrowser: ActiveBrowser?
@@ -35,6 +36,7 @@ final class DaemonRunner {
         let tap = GestureEventTap { [weak self] action in
             guard let self = self, let browser = self.activeBrowser else { return }
             self.tabSwitcher.perform(action, shortcuts: browser.shortcuts, targetPID: browser.pid)
+            self.haptics.tap()
         }
 
         guard tap.start() else {

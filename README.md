@@ -8,27 +8,31 @@ To this end, I made a macOS utility that lets you use the 3-finger swipe to move
 
 - **Zero UI, zero config files, zero dependencies** — pure native Swift LaunchAgent daemon (~3–6 MB RAM, ~0.0% idle CPU).
 - **Browser-only activation** — listens for active-app changes via `NSWorkspace` (zero polling) and **disables its event tap completely** whenever a non-browser app is focused.
-- **Intuitive single-step gesture**:
-  - Hold **⌘** (Left or Right, no other modifiers) + **3-finger swipe left** → move 1 tab right (next tab, matching macOS Spaces natural direction).
-  - Hold **⌘** + **3-finger swipe right** → move 1 tab left (previous tab).
-  - Keep holding **⌘**, lift your fingers, and swipe again to keep stepping through tabs.
+- **Continuous scrubbing with Taptic Engine clicks**:
+  - Hold **⌘** (Left or Right, no other modifiers) + **3-finger swipe left** → move to the right (next tab, matching macOS Spaces natural direction).
+  - Hold **⌘** + **3-finger swipe right** → move to the left (previous tab).
+  - Keep sliding to step through multiple tabs continuously (or reverse direction mid-swipe without lifting) — your trackpad's **Taptic Engine** clicks on every tab switch.
   - Release **⌘** → normal macOS 3-finger Space switching works untouched.
 
 ## Supported Browsers
 
-Built-in support (see `Sources/TabSwipeCore/BrowserRegistry.swift`):
+TabSwipe sends native keyboard shortcuts directly to the focused browser process (defined in `Sources/TabSwipeCore/BrowserRegistry.swift`):
 
-- Safari (& Safari Technology Preview)
-- Google Chrome (Stable, Beta, Dev, Canary)
-- Brave (Stable, Beta, Nightly)
-- Firefox (Stable, Developer Edition, Nightly)
-- Microsoft Edge (Stable, Beta, Dev, Canary)
-- Arc
-- Vivaldi
-- Opera (& Opera GX)
-- Orion
-- Zen Browser
-- Chromium
+| Browser | Variants / Bundle IDs | Next Tab (Swipe Left) | Previous Tab (Swipe Right) |
+| :--- | :--- | :---: | :---: |
+| **Safari** | `com.apple.Safari`, `com.apple.SafariTechnologyPreview` | `⌘ ⇧ ]` | `⌘ ⇧ [` |
+| **Google Chrome** | `com.google.Chrome` (`.beta`, `.dev`, `.canary`) | `⌘ ⇧ ]` | `⌘ ⇧ [` |
+| **Brave** | `com.brave.Browser` (`.beta`, `.nightly`) | `⌘ ⇧ ]` | `⌘ ⇧ [` |
+| **Firefox** | `org.mozilla.firefox`, `org.mozilla.firefoxdeveloperedition`, `org.mozilla.nightly` | `⌘ ⇧ ]` | `⌘ ⇧ [` |
+| **Microsoft Edge** | `com.microsoft.edgemac` (`.Beta`, `.Dev`, `.Canary`) | `⌘ ⇧ ]` | `⌘ ⇧ [` |
+| **Arc** | `company.thebrowser.Browser` | `⌘ ⌥ ↓` | `⌘ ⌥ ↑` |
+| **Vivaldi** | `com.vivaldi.Vivaldi` | `⌘ ⇧ ]` | `⌘ ⇧ [` |
+| **Opera** | `com.operasoftware.Opera`, `com.operasoftware.OperaGX` | `⌘ ⇧ ]` | `⌘ ⇧ [` |
+| **Orion** | `com.kagi.kagimacOS` | `⌘ ⇧ ]` | `⌘ ⇧ [` |
+| **Zen Browser** | `app.zen-browser.zen`, `io.github.zen-browser.zen` | `⌘ ⇧ ]` | `⌘ ⇧ [` |
+| **Chromium** | `org.chromium.Chromium` | `⌘ ⇧ ]` | `⌘ ⇧ [` |
+
+**Easily expandable:** Adding another browser (or customizing shortcuts) is a single-line addition to `BrowserRegistry.browsers` in `Sources/TabSwipeCore/BrowserRegistry.swift` — find any app's bundle ID with `osascript -e 'id of app "AppName"'`, map it to `.standard` (or a custom `BrowserShortcuts`), and run `make install`.
 
 ## Requirements
 
@@ -80,7 +84,8 @@ If you modify and rebuild TabSwipe often, create a free local self-signed certif
 Want to add a browser or tweak swipe sensitivity?
 
 - **Add a browser**: Add its macOS bundle ID to `Sources/TabSwipeCore/BrowserRegistry.swift`.
-- **Adjust swipe sensitivity**: Change `horizontalThreshold` (default `0.035`) in `Sources/TabSwipeCore/SwipeRecognizer.swift`.
+- **Adjust swipe spacing**: Change `initialThreshold` (default `0.035`) and `stepDistance` (default `0.045`) in `Sources/TabSwipeCore/SwipeRecognizer.swift`.
+- **Adjust Taptic click strength**: Change `actuationID` (default `3` = light detent, `4` = medium, `6` = firm) in `Sources/tabswipe/HapticFeedback.swift`.
 - Rebuild and reinstall:
 
 ```bash
