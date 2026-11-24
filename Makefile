@@ -1,8 +1,9 @@
 ARCH := $(shell uname -m)
 SDK := $(shell xcrun --sdk macosx --show-sdk-path)
 TARGET := $(ARCH)-apple-macos13.0
-BUILD_DIR := .build/release
-MODULE_CACHE := /tmp/tabswipe-module-cache
+TEMP_ROOT := $(patsubst %/,%,$(or $(TMPDIR),/tmp))
+BUILD_DIR ?= $(TEMP_ROOT)/tabswipe-build
+MODULE_CACHE ?= $(TEMP_ROOT)/tabswipe-module-cache
 
 .PHONY: build test install uninstall clean
 
@@ -50,4 +51,4 @@ uninstall:
 	fi
 
 clean:
-	rm -rf .build
+	rm -rf $(BUILD_DIR) $(MODULE_CACHE) .build

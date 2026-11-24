@@ -33,7 +33,7 @@ Tests/
 ## Build & Test Commands
 
 ```bash
-make build                 # Build standalone release binary (.build/release/tabswipe) with CLT
+make build                 # Build standalone release binary ($TMPDIR/tabswipe-build/tabswipe) with CLT
 make test                  # Run unit tests (uses swift test with Xcode, or StandaloneRunner with CLT)
 ```
 

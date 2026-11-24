@@ -39,12 +39,12 @@ cd TabSwipe
 make install
 ```
 
-Or build and run tests manually (works with Apple Command Line Tools alone, no Xcode required):
+Or build and run tests manually (works with Apple Command Line Tools alone, no Xcode required; compiles into `$TMPDIR/tabswipe-build` so your source directory stays clean):
 
 ```bash
 make build
 make test
-.build/release/tabswipe install
+make install
 ```
 
 *(If you have full Xcode installed, `swift build -c release` and `swift test` also work.)*
