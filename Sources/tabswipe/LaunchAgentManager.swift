@@ -74,11 +74,14 @@ enum LaunchAgentManager {
         print("  Log:         \(logURL.path)")
         print("")
         print("Grant Accessibility permission if you haven't already:")
-        print("  1. Open System Settings -> Privacy & Security -> Accessibility")
-        print("  2. Click '+' and add: \(destinationURL.path)")
-        print("     (Tip: press Cmd+Shift+G in the file picker to paste the path)")
-        print("  3. Enable the toggle — TabSwipe will activate automatically within 5 seconds.")
+        print("  1. System Settings -> Privacy & Security -> Accessibility will open automatically.")
+        print("  2. Enable the toggle next to 'tabswipe' (if it was already enabled from an older build, toggle it off and back on).")
+        print("  3. TabSwipe will activate automatically within 5 seconds.")
+        print("     (If 'tabswipe' doesn't appear in the list, click '+' and add: \(destinationURL.path))")
 
+        // Give launchd a brief moment to launch the daemon and register the binary with TCC,
+        // then open System Settings -> Accessibility directly.
+        Thread.sleep(forTimeInterval: 0.4)
         PermissionsManager.openAccessibilitySettings()
     }
 

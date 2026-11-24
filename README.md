@@ -53,9 +53,9 @@ make install
 
 ### Grant Accessibility Permission
 
-1. Open **System Settings → Privacy & Security → Accessibility**.
-2. Click **+** and select `~/.local/bin/tabswipe` *(press `⌘⇧G` in the file picker to paste the path)*.
-3. Enable the toggle. TabSwipe checks quietly every 5 seconds and activates automatically once granted.
+1. `make install` automatically registers `tabswipe` with macOS and opens **System Settings → Privacy & Security → Accessibility**.
+2. Enable the toggle next to **tabswipe** *(if you reinstalled over an older build, toggle it off and back on)*.
+3. TabSwipe checks quietly every 5 seconds and activates automatically once granted. *(If `tabswipe` doesn't appear automatically, click **+** and add `~/.local/bin/tabswipe`.)*
 
 ## Commands
 

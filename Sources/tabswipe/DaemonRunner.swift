@@ -20,7 +20,8 @@ final class DaemonRunner {
         log("TabSwipe daemon starting.")
 
         if !PermissionsManager.isTrusted() {
-            log("Waiting for Accessibility permission (checking every 5s)...")
+            log("Accessibility permission not granted; prompting macOS to register tabswipe and waiting (checking every 5s)...")
+            PermissionsManager.requestPermissionPrompt()
         }
 
         permissions.waitUntilTrusted(intervalSeconds: 5.0) { [weak self] in
