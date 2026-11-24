@@ -57,13 +57,12 @@ make install
 
 *(If you have full Xcode installed, `swift build -c release` and `swift test` also work.)*
 
-`tabswipe install` copies the binary to `~/.local/bin/tabswipe`, registers a LaunchAgent at `~/Library/LaunchAgents/com.tabswipe.agent.plist`, starts it, and opens **System Settings → Privacy & Security → Accessibility**.
+`tabswipe install` copies the binary to `~/.local/bin/tabswipe`, registers a LaunchAgent at `~/Library/LaunchAgents/com.tabswipe.agent.plist`, and starts it.
 
 ### Grant Accessibility Permission
 
-1. `make install` automatically registers `tabswipe` with macOS and opens **System Settings → Privacy & Security → Accessibility**.
-2. Enable the toggle next to **tabswipe** *(if you reinstalled over an older ad-hoc build, remove `tabswipe` with **−** and re-add `~/.local/bin/tabswipe` with **+**)*.
-3. TabSwipe checks quietly every 5 seconds and activates automatically once granted. *(If `tabswipe` doesn't appear automatically, click **+** and add `~/.local/bin/tabswipe`.)*
+1. On first run, macOS automatically prompts to grant `tabswipe` Accessibility access — click **Open System Settings** and enable the toggle next to **tabswipe** *(if you reinstalled over an older ad-hoc build, remove `tabswipe` with **−** and re-add `~/.local/bin/tabswipe` with **+**)*.
+2. TabSwipe checks quietly every 5 seconds and activates automatically once granted. *(If `tabswipe` doesn't appear automatically, click **+** and add `~/.local/bin/tabswipe`.)*
 
 #### Optional: Keep Accessibility Permission Across Rebuilds
 If you modify and rebuild TabSwipe often, create a free local self-signed certificate once in **Keychain Access**:

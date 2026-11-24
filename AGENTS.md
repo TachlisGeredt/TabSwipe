@@ -15,7 +15,7 @@ Package.swift                           # Swift 5.8+ SPM manifest (macOS 13+, ze
 Sources/
 ├── TabSwipeCore/                       # Pure-Swift, unit-testable core (no AppKit/CGEvent)
 │   ├── BrowserRegistry.swift           # Built-in browser bundle IDs & tab key shortcuts
-│   └── SwipeRecognizer.swift           # Single-step 3-finger horizontal swipe state machine
+│   └── SwipeRecognizer.swift           # Continuous 3-finger horizontal swipe state machine
 └── tabswipe/                           # macOS daemon & CLI executable
     ├── main.swift                      # Subcommands: install, uninstall, status, run
     ├── DaemonRunner.swift              # Main lifecycle coordinator & signal handling
@@ -57,4 +57,4 @@ No full Xcode installation is required — Apple Command Line Tools (`swiftc`) i
 - **Memory safety in `CGEventTapCallBack`**: Always return `Unmanaged.passUnretained(event)` when passing an event through (returning `passRetained` leaks every event).
 - **Space-switch suppression**: macOS emits raw touch frames on `CGEventType(rawValue: 29)` AND Dock fluid Space-sliding events on `CGEventType(rawValue: 30)` (plus synthesized empty-touch packets on `29`), often with `event.flags == 0`. Always read live modifier flags via `CGEventSource.flagsState(.hidSystemState)` and return `nil` on both `30` and `29` while suppressing a `⌘` + 3-finger gesture.
 - **Event tap timeout recovery**: Always handle `.tapDisabledByTimeout` and `.tapDisabledByUserInput` by re-enabling the tap only when `isEnabled == true`.
-- **Accessibility after rebuild**: `tabswipe install` ad-hoc signs `~/.local/bin/tabswipe`. On some macOS versions, replacing the binary may require toggling Accessibility off/on in System Settings.
+- **Accessibility after rebuild**: `tabswipe install` signs `~/.local/bin/tabswipe` with a local `TabSwipe` Keychain certificate (or `TABSWIPE_CODESIGN_IDENTITY`) if present so macOS preserves Accessibility permission across rebuilds; otherwise it falls back to ad-hoc signing, which requires removing (`−`) and re-adding (`+`) `tabswipe` in Accessibility after a rebuild.
