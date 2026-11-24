@@ -1,6 +1,10 @@
 # TabSwipe
 
-Ultra-lightweight macOS background utility that lets you hold **⌘ Command** and **3-finger swipe** horizontally on your trackpad to switch between browser tabs — without switching macOS Desktop Spaces.
+I have an unhealthy habit of accumulating vast quantities of tabs in my browser window, to the point where it is hard to tell which tab is which as the title is not visible, or it's annoying to click on that tiny spot which is the tab I want to open.
+
+To this end, I made a macOS utility that lets you use the 3-finger swipe to move between tabs when in a browser. All you need to do is hold down the **⌘ Command** button (right by your thumb), and then your 3-finger swipes will move you a tab to the left or to the right instead of switching desktops.
+
+## Features
 
 - **Zero UI, zero config files, zero dependencies** — pure native Swift LaunchAgent daemon (~3–6 MB RAM, ~0.0% idle CPU).
 - **Browser-only activation** — listens for active-app changes via `NSWorkspace` (zero polling) and **disables its event tap completely** whenever a non-browser app is focused.
