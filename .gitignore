@@ -1,5 +1,30 @@
-.DS_Store
+# Build directories
 .build/
+build/
+DerivedData/
+
+# Compiled binaries and bundles
+/tabswipe
+/tabswipe-tests
+*.app/
+*.dSYM/
+*.dSYM
+
+# Compiled Swift & native artifacts
+*.o
+*.a
+*.dylib
+*.swiftmodule
+*.swiftdoc
+*.swiftsourceinfo
+*.abi.json
+*.pcm
+
+# SwiftPM & Xcode
 .swiftpm/
 *.xcodeproj
 *.xcworkspace
+xcuserdata/
+
+# macOS
+.DS_Store
