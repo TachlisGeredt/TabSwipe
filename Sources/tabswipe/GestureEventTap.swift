@@ -172,7 +172,7 @@ final class GestureEventTap {
             TouchPoint(x: Double(touch.normalizedPosition.x), y: Double(touch.normalizedPosition.y))
         }
 
-        let result = recognizer.process(touches: touchingPoints, commandOnly: true)
+        let result = recognizer.process(touches: touchingPoints, commandOnly: true, timestamp: now)
         isSuppressingGesture = result.shouldSuppressSystemGesture
         if result.shouldSuppressSystemGesture {
             lastSuppressedTouchTime = now

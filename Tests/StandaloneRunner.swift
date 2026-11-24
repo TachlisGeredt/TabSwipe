@@ -24,73 +24,97 @@ private func threeFingers(x: Double, y: Double = 0.5) -> [TouchPoint] {
     ]
 }
 
-// 1. Quick short swipe right -> previousTab (natural macOS direction)
+// 1. Continuous velocity gradient clamps and interpolates smoothly
 do {
-    let r = SwipeRecognizer(initialThreshold: 0.035, stepDistance: 0.045)
-    let f1 = r.process(touches: threeFingers(x: 0.40), commandOnly: true)
+    let r = SwipeRecognizer(
+        initialThreshold: 0.035,
+        maxStepDistance: 0.045,
+        minStepDistance: 0.020,
+        slowSpeed: 0.20,
+        fastSpeed: 1.40
+    )
+    expect(abs(r.stepDistance(forSpeed: 0.0) - 0.045) < 1e-6, "Slow floor clamps at 0.045")
+    expect(abs(r.stepDistance(forSpeed: 0.20) - 0.045) < 1e-6, "Slow boundary equals 0.045")
+    expect(abs(r.stepDistance(forSpeed: 0.80) - 0.0325) < 1e-6, "Midpoint speed interpolates to 0.0325")
+    expect(abs(r.stepDistance(forSpeed: 1.40) - 0.020) < 1e-6, "Fast boundary equals 0.020")
+    expect(abs(r.stepDistance(forSpeed: 5.0) - 0.020) < 1e-6, "Fast ceiling clamps at 0.020")
+}
+
+// 2. Quick short swipe right -> previousTab (natural macOS direction)
+do {
+    let r = SwipeRecognizer()
+    let f1 = r.process(touches: threeFingers(x: 0.40), commandOnly: true, timestamp: 1.0)
     expect(f1.actions.isEmpty && f1.shouldSuppressSystemGesture, "Anchor frame suppresses without firing")
-    let f2 = r.process(touches: threeFingers(x: 0.42), commandOnly: true)
+    let f2 = r.process(touches: threeFingers(x: 0.42), commandOnly: true, timestamp: 1.2)
     expect(f2.actions.isEmpty && f2.shouldSuppressSystemGesture, "Sub-threshold frame does not fire")
-    let f3 = r.process(touches: threeFingers(x: 0.44), commandOnly: true)
+    let f3 = r.process(touches: threeFingers(x: 0.44), commandOnly: true, timestamp: 1.4)
     expect(f3.actions == [.previousTab] && f3.shouldSuppressSystemGesture, "Quick swipe right triggers previousTab")
 }
 
-// 2. Continuous swipe left emits a step at every stepDistance
+// 3. Fast swipe triggers more tabs than slow swipe over the exact same distance
 do {
-    let r = SwipeRecognizer(initialThreshold: 0.035, stepDistance: 0.045)
-    _ = r.process(touches: threeFingers(x: 0.60), commandOnly: true)
-    expect(r.process(touches: threeFingers(x: 0.56), commandOnly: true).actions == [.nextTab], "1st step fires at initialThreshold")
-    expect(r.process(touches: threeFingers(x: 0.54), commandOnly: true).actions.isEmpty, "Between detents emits nothing")
-    expect(r.process(touches: threeFingers(x: 0.515), commandOnly: true).actions == [.nextTab], "2nd step fires at stepDistance")
-    expect(r.process(touches: threeFingers(x: 0.47), commandOnly: true).actions == [.nextTab], "3rd step fires at stepDistance")
+    let slowR = SwipeRecognizer()
+    let fastR = SwipeRecognizer()
+    var slowTabs = 0
+    var fastTabs = 0
+
+    for i in 0...20 {
+        let x = 0.80 - Double(i) * 0.01
+        slowTabs += slowR.process(touches: threeFingers(x: x), commandOnly: true, timestamp: Double(i) * 0.10).actions.count
+        fastTabs += fastR.process(touches: threeFingers(x: x), commandOnly: true, timestamp: Double(i) * 0.005).actions.count
+    }
+
+    expect(slowTabs == 4, "Slow swipe over 0.20 switches 4 tabs (got \(slowTabs))")
+    expect(fastTabs == 9, "Fast swipe over 0.20 switches 9 tabs (got \(fastTabs))")
+    expect(fastTabs > slowTabs, "Fast swipe switches more tabs than slow swipe")
 }
 
-// 3. Reversing direction mid-swipe steps back without lifting
-do {
-    let r = SwipeRecognizer(initialThreshold: 0.035, stepDistance: 0.045)
-    _ = r.process(touches: threeFingers(x: 0.60), commandOnly: true)
-    expect(r.process(touches: threeFingers(x: 0.56), commandOnly: true).actions == [.nextTab], "Step left fires nextTab")
-    expect(r.process(touches: threeFingers(x: 0.615), commandOnly: true).actions == [.previousTab], "Reversing right fires previousTab")
-}
-
-// 4. Lift fingers while holding Command allows repeat swipe
-do {
-    let r = SwipeRecognizer(initialThreshold: 0.035, stepDistance: 0.045)
-    _ = r.process(touches: threeFingers(x: 0.60), commandOnly: true)
-    expect(r.process(touches: threeFingers(x: 0.56), commandOnly: true).actions == [.nextTab], "First swipe fires")
-    let lift = r.process(touches: [], commandOnly: true)
-    expect(lift.actions.isEmpty && !lift.shouldSuppressSystemGesture, "Finger lift resets")
-    _ = r.process(touches: threeFingers(x: 0.60), commandOnly: true)
-    expect(r.process(touches: threeFingers(x: 0.56), commandOnly: true).actions == [.nextTab], "Second swipe fires without releasing Command")
-}
-
-// 5. Ignored when Command is not held alone
+// 4. Reversing direction mid-swipe steps back without lifting
 do {
     let r = SwipeRecognizer()
-    let f1 = r.process(touches: threeFingers(x: 0.40), commandOnly: false)
-    let f2 = r.process(touches: threeFingers(x: 0.60), commandOnly: false)
+    _ = r.process(touches: threeFingers(x: 0.60), commandOnly: true, timestamp: 1.0)
+    expect(r.process(touches: threeFingers(x: 0.56), commandOnly: true, timestamp: 1.5).actions == [.nextTab], "Step left fires nextTab")
+    expect(r.process(touches: threeFingers(x: 0.615), commandOnly: true, timestamp: 2.0).actions == [.previousTab], "Reversing right fires previousTab")
+}
+
+// 5. Lift fingers while holding Command allows repeat swipe
+do {
+    let r = SwipeRecognizer()
+    _ = r.process(touches: threeFingers(x: 0.60), commandOnly: true, timestamp: 1.0)
+    expect(r.process(touches: threeFingers(x: 0.56), commandOnly: true, timestamp: 1.5).actions == [.nextTab], "First swipe fires")
+    let lift = r.process(touches: [], commandOnly: true, timestamp: 1.6)
+    expect(lift.actions.isEmpty && !lift.shouldSuppressSystemGesture, "Finger lift resets")
+    _ = r.process(touches: threeFingers(x: 0.60), commandOnly: true, timestamp: 2.0)
+    expect(r.process(touches: threeFingers(x: 0.56), commandOnly: true, timestamp: 2.5).actions == [.nextTab], "Second swipe fires without releasing Command")
+}
+
+// 6. Ignored when Command is not held alone
+do {
+    let r = SwipeRecognizer()
+    let f1 = r.process(touches: threeFingers(x: 0.40), commandOnly: false, timestamp: 1.0)
+    let f2 = r.process(touches: threeFingers(x: 0.60), commandOnly: false, timestamp: 1.1)
     expect(f1.actions.isEmpty && !f1.shouldSuppressSystemGesture, "No Command -> passthrough")
     expect(f2.actions.isEmpty && !f2.shouldSuppressSystemGesture, "No Command swipe -> passthrough")
 }
 
-// 6. Ignored for 2 or 4 fingers
+// 7. Ignored for 2 or 4 fingers
 do {
     let r = SwipeRecognizer()
     let two = [TouchPoint(x: 0.4, y: 0.5), TouchPoint(x: 0.5, y: 0.5)]
     let four = [TouchPoint(x: 0.3, y: 0.5), TouchPoint(x: 0.4, y: 0.5), TouchPoint(x: 0.5, y: 0.5), TouchPoint(x: 0.6, y: 0.5)]
-    expect(!r.process(touches: two, commandOnly: true).shouldSuppressSystemGesture, "2 fingers ignored")
-    expect(!r.process(touches: four, commandOnly: true).shouldSuppressSystemGesture, "4 fingers ignored")
+    expect(!r.process(touches: two, commandOnly: true, timestamp: 1.0).shouldSuppressSystemGesture, "2 fingers ignored")
+    expect(!r.process(touches: four, commandOnly: true, timestamp: 1.1).shouldSuppressSystemGesture, "4 fingers ignored")
 }
 
-// 7. Vertical swipe rejected and stays ignored until lift
+// 8. Vertical swipe rejected and stays ignored until lift
 do {
-    let r = SwipeRecognizer(initialThreshold: 0.035, stepDistance: 0.045)
-    _ = r.process(touches: threeFingers(x: 0.50, y: 0.50), commandOnly: true)
-    expect(r.process(touches: threeFingers(x: 0.505, y: 0.60), commandOnly: true).actions.isEmpty, "Vertical movement ignored")
-    expect(r.process(touches: threeFingers(x: 0.70, y: 0.60), commandOnly: true).actions.isEmpty, "Subsequent drift ignored")
+    let r = SwipeRecognizer()
+    _ = r.process(touches: threeFingers(x: 0.50, y: 0.50), commandOnly: true, timestamp: 1.0)
+    expect(r.process(touches: threeFingers(x: 0.505, y: 0.60), commandOnly: true, timestamp: 1.1).actions.isEmpty, "Vertical movement ignored")
+    expect(r.process(touches: threeFingers(x: 0.70, y: 0.60), commandOnly: true, timestamp: 1.2).actions.isEmpty, "Subsequent drift ignored")
 }
 
-// 8. BrowserRegistry matching & shortcuts
+// 9. BrowserRegistry matching & shortcuts
 do {
     expect(BrowserRegistry.isSupportedBrowser("com.apple.Safari"), "Safari supported")
     expect(BrowserRegistry.isSupportedBrowser("com.google.Chrome"), "Chrome supported")

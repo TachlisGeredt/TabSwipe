@@ -11,7 +11,7 @@ To this end, I made a macOS utility that lets you use the 3-finger swipe to move
 - **Continuous scrubbing with Taptic Engine clicks**:
   - Hold **⌘** (Left or Right, no other modifiers) + **3-finger swipe left** → move to the right (next tab, matching macOS Spaces natural direction).
   - Hold **⌘** + **3-finger swipe right** → move to the left (previous tab).
-  - Keep sliding to step through multiple tabs continuously (or reverse direction mid-swipe without lifting) — your trackpad's **Taptic Engine** clicks on every tab switch.
+  - Keep sliding to step through multiple tabs continuously with a **velocity-sensitive gradient** (slow swipes use wider spacing for 1–2 tab precision; fast swipes tighten spacing to zip across many tabs; reverse direction mid-swipe without lifting) — your trackpad's **Taptic Engine** clicks on every tab switch.
   - Release **⌘** → normal macOS 3-finger Space switching works untouched.
 
 ## Supported Browsers
@@ -83,7 +83,7 @@ If you modify and rebuild TabSwipe often, create a free local self-signed certif
 Want to add a browser or tweak swipe sensitivity?
 
 - **Add a browser**: Add its macOS bundle ID to `Sources/TabSwipeCore/BrowserRegistry.swift`.
-- **Adjust swipe spacing**: Change `initialThreshold` (default `0.035`) and `stepDistance` (default `0.045`) in `Sources/TabSwipeCore/SwipeRecognizer.swift`.
+- **Adjust swipe spacing & acceleration**: Change `initialThreshold` (default `0.035`), `maxStepDistance` (slow, default `0.045`), `minStepDistance` (fast, default `0.020`), `slowSpeed` (`0.20`), and `fastSpeed` (`1.40`) in `Sources/TabSwipeCore/SwipeRecognizer.swift`.
 - **Adjust Taptic click strength**: Change `actuationID` (default `3` = light detent, `4` = medium, `6` = firm) in `Sources/tabswipe/HapticFeedback.swift`.
 - Rebuild and reinstall:
 
