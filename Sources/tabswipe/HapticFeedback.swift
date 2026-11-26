@@ -34,7 +34,7 @@ final class HapticFeedback {
     private var lastWallBumpTime: TimeInterval = 0
     private let wallBumpCooldown: TimeInterval = 0.25
 
-    init(actuationID: Int32 = 3, wallActuationID: Int32 = 6) {
+    init(actuationID: Int32 = 3, wallActuationID: Int32 = 3) {
         self.actuationID = actuationID
         self.wallActuationID = wallActuationID
         loadMultitouchFramework()
@@ -52,13 +52,13 @@ final class HapticFeedback {
         performActuation(id: actuationID)
     }
 
-    /// Fires a rapid 4-click Taptic Engine burst to signify hitting the first or last tab.
+    /// Fires a rapid 3-click Taptic Engine burst to signify hitting the first or last tab.
     func wallBump() {
         let now = ProcessInfo.processInfo.systemUptime
         guard (now - lastWallBumpTime) >= wallBumpCooldown else { return }
         lastWallBumpTime = now
 
-        let burstCount = 4
+        let burstCount = 3
         let spacingSeconds = 0.025
         for i in 0..<burstCount {
             let delay = Double(i) * spacingSeconds
