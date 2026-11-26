@@ -9,29 +9,34 @@ import TabSwipeCore
 /// ~1 ms even when hundreds of tabs are open. Gracefully returns `false` for browsers whose
 /// tab bars do not expose `AXTabGroup` (e.g., Firefox/Arc), falling back to normal wrapping.
 final class BrowserTabBoundary {
-    private let maxSearchDepth = 6
-    private let maxVisitedNodes = 80
+    private let maxSearchDepth = 12
+    private let maxVisitedNodes = 400
     private let skippedRoles: Set<String> = [
         "AXWebArea",
         "AXScrollArea",
+        "AXToolbar",
         "AXTextArea",
         "AXTextField",
         "AXTable",
         "AXOutline",
         "AXMenuBar",
+        "AXButton",
+        "AXStaticText",
+        "AXImage",
+        "AXMenuButton",
+        "AXPopUpButton",
+        "AXCheckBox",
+        "AXLink",
     ]
 
     /// Returns `true` if performing `action` would wrap past the first or last tab.
     func isAtEdge(for action: SwipeAction, pid: pid_t) -> Bool {
         let appElement = AXUIElementCreateApplication(pid)
-        guard let window = copyElementAttribute(appElement, kAXFocusedWindowAttribute as CFString),
-              let tabGroup = findTabGroup(in: window)
+        guard let window = frontmostWindow(of: appElement),
+              let (tabGroup, tabs) = findTabGroupWithTabs(in: window)
         else {
             return false
         }
-
-        let tabs = extractTabs(from: tabGroup)
-        guard !tabs.isEmpty else { return false }
 
         let edgeTab: AXUIElement
         switch action {
@@ -45,16 +50,35 @@ final class BrowserTabBoundary {
             return true
         }
 
-        // Some browsers expose the selected tab directly as AXTabGroup's AXValue.
+        // Some browsers expose the selected tab directly on AXTabGroup via AXValue or AXSelectedChildren.
         if let selectedFromGroup = copyElementAttribute(tabGroup, kAXValueAttribute as CFString),
            CFEqual(selectedFromGroup, edgeTab) {
+            return true
+        }
+
+        if let selectedChildren = copyElementArrayAttribute(tabGroup, kAXSelectedChildrenAttribute as CFString),
+           selectedChildren.contains(where: { CFEqual($0, edgeTab) }) {
             return true
         }
 
         return false
     }
 
-    private func findTabGroup(in root: AXUIElement) -> AXUIElement? {
+    private func frontmostWindow(of appElement: AXUIElement) -> AXUIElement? {
+        if let focused = copyElementAttribute(appElement, kAXFocusedWindowAttribute as CFString) {
+            return focused
+        }
+        if let main = copyElementAttribute(appElement, kAXMainWindowAttribute as CFString) {
+            return main
+        }
+        if let windows = copyElementArrayAttribute(appElement, kAXWindowsAttribute as CFString),
+           let first = windows.first {
+            return first
+        }
+        return nil
+    }
+
+    private func findTabGroupWithTabs(in root: AXUIElement) -> (AXUIElement, [AXUIElement])? {
         var queue: [(element: AXUIElement, depth: Int)] = [(root, 0)]
         var index = 0
         var visited = 0
@@ -66,7 +90,11 @@ final class BrowserTabBoundary {
 
             let role = copyStringAttribute(current.element, kAXRoleAttribute as CFString)
             if role == (kAXTabGroupRole as String) {
-                return current.element
+                let tabs = extractTabs(from: current.element)
+                if !tabs.isEmpty {
+                    return (current.element, tabs)
+                }
+                continue
             }
 
             if let role = role, skippedRoles.contains(role) {
