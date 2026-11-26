@@ -57,7 +57,7 @@ make install
 
 *(If you have full Xcode installed, `swift build -c release` and `swift test` also work.)*
 
-`tabswipe install` copies the binary to `~/.local/bin/tabswipe`, registers a LaunchAgent at `~/Library/LaunchAgents/com.tabswipe.agent.plist`, and starts it.
+`make install` compiles the binary and runs `tabswipe install` for you — copying it to `~/.local/bin/tabswipe`, registering a LaunchAgent at `~/Library/LaunchAgents/com.tabswipe.agent.plist`, and starting it.
 
 ### Grant Accessibility Permission
 
