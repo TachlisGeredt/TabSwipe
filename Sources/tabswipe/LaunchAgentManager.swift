@@ -149,6 +149,7 @@ enum LaunchAgentManager {
         let dict: [String: Any] = [
             "Label": label,
             "ProgramArguments": [binaryPath, "run"],
+            "LimitLoadToSessionType": "Aqua",
             "RunAtLoad": true,
             "KeepAlive": true,
             "ProcessType": "Interactive",

@@ -11,6 +11,7 @@ final class DaemonRunner {
     private var gestureTap: GestureEventTap?
     private var activeBrowser: ActiveBrowser?
     private var signalSources: [DispatchSourceSignal] = []
+    private var sessionObservers: [NSObjectProtocol] = []
 
     func run() {
         // Run as a completely invisible background agent (no Dock icon, no menu bar, no windows).
@@ -56,13 +57,34 @@ final class DaemonRunner {
         }
         workspaceMonitor = monitor
         monitor.start()
+        installSessionObservers()
 
         log("TabSwipe active (event tap enabled only when a supported browser is focused).")
+    }
+
+    private func installSessionObservers() {
+        let nc = NSWorkspace.shared.notificationCenter
+        let names: [NSNotification.Name] = [
+            NSWorkspace.didWakeNotification,
+            NSWorkspace.sessionDidBecomeActiveNotification,
+        ]
+        for name in names {
+            let obs = nc.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                guard let self = self else { return }
+                self.gestureTap?.refresh()
+                self.workspaceMonitor?.start()
+            }
+            sessionObservers.append(obs)
+        }
     }
 
     private func shutdown() {
         log("TabSwipe daemon stopping.")
         permissions.stopWaiting()
+        for obs in sessionObservers {
+            NSWorkspace.shared.notificationCenter.removeObserver(obs)
+        }
+        sessionObservers.removeAll()
         workspaceMonitor?.stop()
         gestureTap?.stop()
         NSApplication.shared.terminate(nil)

@@ -73,14 +73,43 @@ final class GestureEventTap {
     }
 
     /// Enables or disables event interception dynamically as browser focus changes.
+    /// Automatically recreates the event tap if macOS invalidated the underlying Mach port
+    /// (e.g., after a reboot/login transition, sleep/wake, or lock screen).
     func setEnabled(_ enabled: Bool) {
         isEnabled = enabled
         if !enabled {
             recognizer.reset()
             isSuppressingGesture = false
+            if let tap = eventTap, CFMachPortIsValid(tap) {
+                CGEvent.tapEnable(tap: tap, enable: false)
+            }
+            return
         }
-        if let tap = eventTap {
-            CGEvent.tapEnable(tap: tap, enable: enabled)
+
+        if let tap = eventTap, CFMachPortIsValid(tap) {
+            CGEvent.tapEnable(tap: tap, enable: true)
+            if CGEvent.tapIsEnabled(tap: tap) {
+                return
+            }
+        }
+
+        // Tap was invalidated or refused to re-enable; rebuild it cleanly.
+        recreateTap(enabled: true)
+    }
+
+    /// Rebuilds the underlying `CGEventTap` (useful after system wake or session switch).
+    func refresh() {
+        let shouldBeEnabled = isEnabled
+        recreateTap(enabled: shouldBeEnabled)
+    }
+
+    private func recreateTap(enabled: Bool) {
+        stop()
+        if start() {
+            isEnabled = enabled
+            if let tap = eventTap {
+                CGEvent.tapEnable(tap: tap, enable: enabled)
+            }
         }
     }
 
