@@ -22,7 +22,8 @@ Sources/
     ├── WorkspaceMonitor.swift          # Event-driven frontmost-app browser detector
     ├── GestureEventTap.swift           # CGEventTap (type 29, 30 & 31 + flagsChanged)
     ├── TabSwitcher.swift               # Synthesizes CGEvent keystrokes to browser PID
-    ├── HapticFeedback.swift            # Dynamic MTActuator Taptic Engine click (+ AppKit fallback)
+    ├── BrowserTabBoundary.swift        # O(1) AXUIElement first/last tab edge detector
+    ├── HapticFeedback.swift            # Dynamic MTActuator Taptic Engine click & wall-bump burst
     ├── PermissionsManager.swift        # AXIsProcessTrusted() check & 5s quiet wait loop
     └── LaunchAgentManager.swift        # Installs/uninstalls ~/.local/bin/tabswipe & plist
 Tests/

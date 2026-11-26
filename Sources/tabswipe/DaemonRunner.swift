@@ -6,6 +6,7 @@ import TabSwipeCore
 final class DaemonRunner {
     private let permissions = PermissionsManager()
     private let tabSwitcher = TabSwitcher()
+    private let tabBoundary = BrowserTabBoundary()
     private let haptics = HapticFeedback()
     private var workspaceMonitor: WorkspaceMonitor?
     private var gestureTap: GestureEventTap?
@@ -36,6 +37,10 @@ final class DaemonRunner {
     private func activate() {
         let tap = GestureEventTap { [weak self] action in
             guard let self = self, let browser = self.activeBrowser else { return }
+            if self.tabBoundary.isAtEdge(for: action, pid: browser.pid) {
+                self.haptics.wallBump()
+                return
+            }
             self.tabSwitcher.perform(action, shortcuts: browser.shortcuts, targetPID: browser.pid)
             self.haptics.tap()
         }

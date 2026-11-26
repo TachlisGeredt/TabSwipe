@@ -21,6 +21,9 @@ final class HapticFeedback {
     /// - 6: firm click
     let actuationID: Int32
 
+    /// Actuation pattern used for the rapid wall-bump burst at the first/last tab.
+    let wallActuationID: Int32
+
     private var frameworkHandle: UnsafeMutableRawPointer?
     private var mtCreate: ActuatorCreateFn?
     private var mtOpen: ActuatorOpenFn?
@@ -28,9 +31,12 @@ final class HapticFeedback {
     private var mtActuate: ActuatorActuateFn?
 
     private var actuators: [CFTypeRef] = []
+    private var lastWallBumpTime: TimeInterval = 0
+    private let wallBumpCooldown: TimeInterval = 0.25
 
-    init(actuationID: Int32 = 3) {
+    init(actuationID: Int32 = 3, wallActuationID: Int32 = 6) {
         self.actuationID = actuationID
+        self.wallActuationID = wallActuationID
         loadMultitouchFramework()
     }
 
@@ -43,13 +49,38 @@ final class HapticFeedback {
 
     /// Fires a single trackpad Taptic Engine click.
     func tap() {
-        if actuateMultitouch() {
+        performActuation(id: actuationID)
+    }
+
+    /// Fires a rapid 4-click Taptic Engine burst to signify hitting the first or last tab.
+    func wallBump() {
+        let now = ProcessInfo.processInfo.systemUptime
+        guard (now - lastWallBumpTime) >= wallBumpCooldown else { return }
+        lastWallBumpTime = now
+
+        let burstCount = 4
+        let spacingSeconds = 0.025
+        for i in 0..<burstCount {
+            let delay = Double(i) * spacingSeconds
+            if i == 0 {
+                performActuation(id: wallActuationID)
+            } else {
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                    guard let self = self else { return }
+                    self.performActuation(id: self.wallActuationID)
+                }
+            }
+        }
+    }
+
+    private func performActuation(id: Int32) {
+        if actuateMultitouch(id: id) {
             return
         }
 
         // Re-discover once in case a trackpad reconnected (e.g., after sleep or Bluetooth wake).
         closeActuators()
-        if openActuators(), actuateMultitouch() {
+        if openActuators(), actuateMultitouch(id: id) {
             return
         }
 
@@ -103,7 +134,7 @@ final class HapticFeedback {
         actuators.removeAll()
     }
 
-    private func actuateMultitouch() -> Bool {
+    private func actuateMultitouch(id: Int32) -> Bool {
         guard let actuateFn = mtActuate else { return false }
         if actuators.isEmpty {
             guard openActuators() else { return false }
@@ -111,7 +142,7 @@ final class HapticFeedback {
 
         var anySucceeded = false
         for actuator in actuators {
-            if actuateFn(actuator, actuationID, 0, 0.0, 0.0) == kIOReturnSuccess {
+            if actuateFn(actuator, id, 0, 0.0, 0.0) == kIOReturnSuccess {
                 anySucceeded = true
             }
         }

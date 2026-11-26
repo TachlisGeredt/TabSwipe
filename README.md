@@ -12,6 +12,7 @@ To this end, I made a macOS utility that lets you use the 3-finger swipe to move
   - Hold **⌘** (Left or Right, no other modifiers) + **3-finger swipe left** → move to the right (next tab, matching macOS Spaces natural direction).
   - Hold **⌘** + **3-finger swipe right** → move to the left (previous tab).
   - Keep sliding to step through multiple tabs continuously with a **velocity-sensitive gradient** (slow swipes use wider spacing for 1–2 tab precision; fast swipes tighten spacing to zip across many tabs; reverse direction mid-swipe without lifting) — your trackpad's **Taptic Engine** clicks on every tab switch.
+  - **Edge stop with wall-bump haptics**: Stops at the leftmost and rightmost tab instead of wrapping around (in browsers exposing `AXTabGroup`, such as Safari and Chromium browsers) and fires a rapid 4-click Taptic burst to signal you've hit the end.
   - Release **⌘** → normal macOS 3-finger Space switching works untouched.
 
 ## Supported Browsers
